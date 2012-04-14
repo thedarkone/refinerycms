@@ -24,7 +24,7 @@ module Refinery
 
       before_inclusion do
         [Refinery::ApplicationController, Refinery::AdminController, ::ApplicationHelper].each do |c|
-          c.send :include, Refinery::AuthenticatedSystem
+          Refinery.include_extension(c, Refinery::AuthenticatedSystem)
         end
       end
 
