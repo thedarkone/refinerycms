@@ -27,12 +27,36 @@ module Refinery
         render :layout => false
       end
 
+      def index_with_manual_children_preloading
+        index_without_manual_children
+        manually_associate_children(@pages)
+      end
+      alias_method_chain :index, :manual_children_preloading
+
     protected
 
       def find_page
         @page = Refinery::Page.find_by_path_or_id(params[:path], params[:id])
       end
       alias_method :page, :find_page
+
+      def find_all_pages(conditions = nil)
+        @pages = Page.where(conditions).includes(:translations).order("lft ASC")
+      end
+
+      # Preloading children via Page.includes(:children) is inefficient and doesn't work beyond
+      # the first level of nesting (ie: @pages.first.children.first.children starts issuing queries again).
+      def manually_associate_children(pages)
+        parent_id_grouped = pages.group_by(&:parent_id)
+        # code taken almost verbatim from AR::Associations::Preloader::CollectionAssociation
+        pages.each do |page|
+          children = parent_id_grouped[page.id] || []
+          association = page.association(:children)
+          association.loaded!
+          association.target.concat(children)
+          children.each {|child| association.set_inverse_instance(child)}
+        end
+      end
 
       # We can safely assume ::Refinery::I18n is defined because this method only gets
       # Invoked when the before_filter from the plugin is run.
