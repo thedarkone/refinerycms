@@ -28,7 +28,7 @@ module Refinery
       end
 
       def index_with_manual_children_preloading
-        index_without_manual_children
+        index_without_manual_children_preloading
         manually_associate_children(@pages)
       end
       alias_method_chain :index, :manual_children_preloading
